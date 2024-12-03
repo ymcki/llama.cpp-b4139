@@ -109,9 +109,7 @@ class SpecialVocab:
         if tid < 0:
             raise ValueError(f'invalid value for special token type {typ}: {tid}')
         if self.n_vocab is None or tid < self.n_vocab:
-            if typ in self.special_token_ids:
-                return
-            self.special_token_ids[typ] = tid
+            self.special_token_ids[typ] = tid # allow override
             return
         logger.warning(f'Special token type {typ}, id {tid} out of range, must be under {self.n_vocab} - skipping')
 
@@ -188,7 +186,13 @@ class SpecialVocab:
         with open(config_file, encoding = 'utf-8') as f:
             config = json.load(f)
         for typ in self.special_token_types:
-            self._set_special_token(typ, config.get(f'{typ}_token_id'))
+            if typ == 'eos' and isinstance(config.get(f'{typ}_token_id'), list):
+                eos_ids = config.get(f'{typ}_token_id')
+                self._set_special_token('eos', eos_ids[0])
+                self._set_special_token('eom', eos_ids[1])
+                self._set_special_token('eot', eos_ids[2])
+            else:
+                self._set_special_token(typ, config.get(f'{typ}_token_id'))
         return True
 
 
